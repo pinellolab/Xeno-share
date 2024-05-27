@@ -58,8 +58,8 @@ def get_metrics(bam, barcode_tag="CB", subpool=None, genome=None):
             continue
 
         # get reads that mapped to genome;
-        if genome and genome not in read.reference_name:
-            continue
+        # if genome and genome not in read.reference_name:
+        #     continue
 
         reads_per_barcode[barcode][0] += 1
 

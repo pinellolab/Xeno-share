@@ -17,7 +17,6 @@ def parse_args():
                         help="BAM file containing reads that mapped to human genome")
     parser.add_argument('--mouse_bam', type=str, default=None,
                         help="BAM file containing reads that mapped to mouse genome")
-    parser.add_argument('--modality', type=str, default=None)
     parser.add_argument('--out_dir', type=str, default=None)
     parser.add_argument('--out_name', type=str, default=None)
 
@@ -71,22 +70,24 @@ def separate_atac(human_bam_file, mouse_bam_file, out_dir, out_name):
     return n_human, n_mouse, n_ambiguous
 
 
-def separate_rna(human_bam_file, mouse_bam_file, out_dir, out_name):
+def separate(human_bam_file, mouse_bam_file, out_dir, out_name):
     human_bam = pysam.AlignmentFile(human_bam_file, mode='rb')
     mouse_bam = pysam.AlignmentFile(mouse_bam_file, mode='rb')
 
     human_reads, mouse_reads, ambiguous_reads = [], [], []
+    
     for human_read, mouse_read in zip(human_bam,
                                       mouse_bam):
         if human_read.qname != mouse_read.qname:
             logging.error('Reads have different name!')
+        
 
         # compare alignment score
         try:
             human_as = human_read.get_tag('AS')
         except KeyError:
             human_as = -10000
-
+            
         try:
             mouse_as = mouse_read.get_tag('AS')
         except KeyError:
@@ -108,7 +109,7 @@ def separate_rna(human_bam_file, mouse_bam_file, out_dir, out_name):
     df_mouse.to_csv(f'{out_dir}/{out_name}_mouse.csv',
                     index=False, header=False, sep='\t')
     df_ambiguous.to_csv(
-        f'{out_dir}/{out_name}_ambiguous.csv', 
+        f'{out_dir}/{out_name}_ambiguous.csv',
         index=False, header=False, sep='\t')
 
     return len(human_reads), len(mouse_reads), len(ambiguous_reads)
@@ -127,18 +128,11 @@ def main():
     logging.info(f'Number of reads in human bam file: {num_reads_human}')
     logging.info(f'Number of reads in mouse bam file: {num_reads_mouse}')
 
-    logging.info(f'Classifing {args.modality} reads')
-    if args.modality == 'ATAC':
-        n_human, n_mouse, n_ambiguous = separate_atac(human_bam_file=args.human_bam,
-                                                      mouse_bam_file=args.mouse_bam,
-                                                      out_dir=args.out_dir,
-                                                      out_name=args.out_name)
-
-    elif args.modality == 'RNA':
-        n_human, n_mouse, n_ambiguous = separate_rna(human_bam_file=args.human_bam,
-                                                     mouse_bam_file=args.mouse_bam,
-                                                     out_dir=args.out_dir,
-                                                     out_name=args.out_name)
+    logging.info(f'Classifing reads')
+    n_human, n_mouse, n_ambiguous = separate(human_bam_file=args.human_bam,
+                                             mouse_bam_file=args.mouse_bam,
+                                             out_dir=args.out_dir,
+                                             out_name=args.out_name)
 
     logging.info(f'Number of human reads: {n_human}')
     logging.info(f'Number of mouse reads: {n_mouse}')
